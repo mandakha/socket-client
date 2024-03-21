@@ -1,0 +1,81 @@
+<html>
+
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"
+    integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs"
+    crossorigin="anonymous"></script>
+  <script>
+    const socket = io('http://localhost:8000', {
+      extraHeaders: {
+        user_id: new URLSearchParams(window.location.search).get('id'),
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjYsImlhdCI6MTcxMDMxMzU2NCwiZXhwIjoxNzEwMzE3MTY0fQ.-8QI0JI4e-IzVh61yuL2wrivmH04xlJNZvFnHdYr5XM',
+      },
+    });
+
+    socket.on('connect', function () {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('chat')) {
+        socket.emit('join_chat', params.get('chat'));
+      }
+    });
+
+    socket.on('chats', function (data) {
+      data.forEach(item => {
+        var link = document.createElement('div');
+        link.innerText = item.id;
+        link.className = "cursor-pointer p-2 rounded-lg text-white bg-white/10";
+
+        function onChatClicked() {
+          const params = new URLSearchParams(window.location.search);
+          params.set('chat', item.id);
+          window.location.href = '?' + params.toString();
+        }
+
+        link.addEventListener('click', onChatClicked);
+
+        document.getElementById('chats').append(link);
+      });
+    });
+
+    socket.on('messages', function (data) {
+      data.forEach(item => {
+        var link = document.createElement('div');
+        link.innerText = item.text;
+        link.className = "p-2 rounded-lg bg-blue-500 text-white self-start";
+
+        document.getElementById('messages').append(link);
+      });
+    });
+
+    function send() {
+      socket.emit('send_message', {
+        text: document.getElementById('message').value,
+        chat_id: new URLSearchParams(window.location.search).get('chat'),
+      });
+      document.getElementById('message').value = '';
+    }
+  </script>
+</head>
+
+<body>
+  <div class="h-screen p-10 bg-black">
+    <div class="h-full flex bg-white/10 rounded-lg">
+      <div class="basis-[400px] p-4">
+        <div class="flex flex-col gap-4" id="chats">
+        </div>
+      </div>
+      <div class="basis-0 grow flex flex-col gap-4 p-4">
+        <div class="basis-0 grow flex flex-col gap-4 overflow-scroll" id="messages">
+        </div>
+        <div class="flex gap-4">
+          <input id="message" type="text" placeholder="Message"
+            class="grow bg-white/10 py-4 px-6 text-white rounded-lg">
+          <button onclick="send()" class="bg-white py-2 px-8 rounded-lg text-sm">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
